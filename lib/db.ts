@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { MongoClient, type Collection } from "mongodb";
+import { MongoClient, type Collection, type Filter } from "mongodb";
 import { detectDevice } from "./device";
 import type { OpenEvent, Stats, Track } from "./types";
 
@@ -74,6 +74,7 @@ async function nextEventId(counters: MongoCollections["counters"]) {
 function hydrateTrack(track: TrackDocument, events: OpenEventDocument[]): Track {
   const allTrackEvents = events
     .filter((event) => event.trackId === track.id)
+    .filter((event) => event.ignoredReason !== "google_prefetch")
     .sort((a, b) => a.openedAt.localeCompare(b.openedAt));
   const trackEvents = allTrackEvents.filter((event) => !event.ignored);
   const last = trackEvents.at(-1);
@@ -173,12 +174,18 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
   if (!track) return null;
 
   const detected = detectDevice(userAgent);
-  const previousEvents = await events.countDocuments({ trackId });
+  const previousCountedEvents = await events.countDocuments({ trackId, ignored: { $ne: true } });
   const openedAt = new Date().toISOString();
-  const secondsSinceSent = Math.abs((Date.now() - new Date(track.sentAt || track.createdAt).getTime()) / 1000);
-  const isGooglePrefetch = previousEvents === 0
-    && (detected.client === "Gmail image proxy" || detected.client === "Unknown client")
-    && secondsSinceSent <= 30;
+  const sentAtMs = new Date(track.sentAt || track.createdAt).getTime();
+  const secondsSinceSent = Number.isNaN(sentAtMs) ? Number.POSITIVE_INFINITY : (Date.now() - sentAtMs) / 1000;
+  const isInitialSystemLoad = previousCountedEvents === 0
+    && secondsSinceSent >= -5
+    && secondsSinceSent <= 120
+    && isSystemImageLoad(detected.client);
+
+  if (isInitialSystemLoad) {
+    return getTrack(trackId);
+  }
 
   await events.insertOne({
     id: await nextEventId(counters),
@@ -187,12 +194,14 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
     ip,
     userAgent,
     deviceType: detected.deviceType,
-    client: detected.client,
-    ignored: isGooglePrefetch,
-    ignoredReason: isGooglePrefetch ? "google_prefetch" : undefined
+    client: detected.client
   });
 
   return getTrack(trackId);
+}
+
+function isSystemImageLoad(client: string) {
+  return client === "Gmail image proxy" || client === "Unknown client" || client === "Unknown";
 }
 
 export async function markSenderView(trackId: string) {
@@ -222,7 +231,10 @@ export async function markSenderView(trackId: string) {
 
 export async function getEvents(trackId?: string) {
   const { events } = await getCollections();
-  const query = trackId ? { trackId } : {};
+  const query: Filter<OpenEventDocument> = {
+    ...(trackId ? { trackId } : {}),
+    ignoredReason: { $ne: "google_prefetch" }
+  };
   const cursor = events.find(query, { projection: { _id: 0 } }).sort({ openedAt: -1 });
   if (!trackId) cursor.limit(100);
   return cursor.toArray();
