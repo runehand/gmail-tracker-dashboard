@@ -22,6 +22,13 @@ The backend stores data in MongoDB. Set `MONGODB_URI` in `.env.local`.
 
 Sender-side Gmail views are corrected through `/api/tracks/:id/sender-view`; those recent self views are marked ignored and do not count as recipient opens.
 
+The dashboard supports:
+
+- sender summaries
+- sender-specific tracked email lists
+- individual email detail pages
+- full open history with ignored sender views separated from recipient opens
+
 ## Limits
 
 Email open tracking depends on remote image loading. If the recipient blocks images, no open is recorded. Gmail and other clients may proxy image requests, so device, IP, and location are approximate.

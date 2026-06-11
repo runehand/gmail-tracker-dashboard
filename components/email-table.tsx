@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
 import type { Track } from "@/lib/types";
 import { Eye, EyeOff } from "lucide-react";
+import Link from "next/link";
 
 export function EmailTable({ tracks }: { tracks: Track[] }) {
   return (
@@ -25,7 +26,9 @@ export function EmailTable({ tracks }: { tracks: Track[] }) {
                 <div className="text-xs text-muted-foreground">from {track.senderEmail}</div>
               </td>
               <td className="max-w-[320px] px-4 py-3">
-                <div className="truncate font-medium">{track.subject || "(No subject)"}</div>
+                <Link href={`/tracks/${track.id}`} className="block truncate font-medium text-primary hover:underline">
+                  {track.subject || "(No subject)"}
+                </Link>
                 <div className="truncate text-xs text-muted-foreground">{track.id}</div>
               </td>
               <td className="px-4 py-3">

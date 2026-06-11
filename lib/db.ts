@@ -129,6 +129,20 @@ export async function getTrack(id: string) {
   return hydrateTrack(track, eventDocs);
 }
 
+export async function updateTrack(id: string, input: { senderEmail?: string; recipientEmail?: string; subject?: string }) {
+  const { tracks } = await getCollections();
+  const update: Partial<TrackDocument> = {};
+  if (input.senderEmail) update.senderEmail = input.senderEmail;
+  if (input.recipientEmail) update.recipientEmail = input.recipientEmail;
+  if (typeof input.subject === "string") update.subject = input.subject;
+
+  if (Object.keys(update).length) {
+    await tracks.updateOne({ id }, { $set: update });
+  }
+
+  return getTrack(id);
+}
+
 export async function recordOpen(trackId: string, userAgent: string | null, ip: string | null) {
   const { tracks, events, counters } = await getCollections();
   const track = await tracks.findOne({ id: trackId });

@@ -3,13 +3,16 @@ import { DeviceChart } from "@/components/device-chart";
 import { EmailTable } from "@/components/email-table";
 import { MetricCard } from "@/components/metric-card";
 import { OpenChart } from "@/components/open-chart";
+import { SenderTable } from "@/components/sender-table";
 import { Badge } from "@/components/ui/badge";
+import { summarizeSenders } from "@/lib/analytics";
 import { getStats, getTracks } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   const [stats, tracks] = await Promise.all([getStats(), getTracks()]);
+  const senders = summarizeSenders(tracks);
 
   return (
     <main className="min-h-screen">
@@ -35,6 +38,8 @@ export default async function DashboardPage() {
           <OpenChart data={stats.dailyOpens} />
           <DeviceChart data={stats.deviceBreakdown} />
         </section>
+
+        <SenderTable senders={senders} />
 
         <section className="space-y-3">
           <div>
