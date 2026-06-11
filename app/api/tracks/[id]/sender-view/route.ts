@@ -11,16 +11,19 @@ const corsHeaders = {
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  let body: { detectedAt?: unknown } = {};
+  let body: { detectedAt?: unknown; senderEmail?: unknown } = {};
   try {
     body = await request.json();
   } catch {
     body = {};
   }
+  if (!body.senderEmail) {
+    return NextResponse.json({ error: "senderEmail is required" }, { status: 400, headers: corsHeaders });
+  }
 
-  const track = await markSenderView(id, typeof body.detectedAt === "string" ? body.detectedAt : undefined);
+  const track = await markSenderView(id, String(body.senderEmail), typeof body.detectedAt === "string" ? body.detectedAt : undefined);
   if (!track) {
-    return NextResponse.json({ error: "Not found" }, { status: 404, headers: corsHeaders });
+    return NextResponse.json({ error: "Not found or sender mismatch" }, { status: 404, headers: corsHeaders });
   }
 
   return NextResponse.json({ track }, { headers: corsHeaders });

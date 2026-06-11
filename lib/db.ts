@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { MongoClient, type Collection } from "mongodb";
+import { MongoClient, type Collection, type Filter } from "mongodb";
 import { detectDevice } from "./device";
 import type { OpenEvent, Stats, Track } from "./types";
 
@@ -55,6 +55,7 @@ async function getCollections(): Promise<MongoCollections> {
   await Promise.all([
     collections.tracks.createIndex({ id: 1 }, { unique: true }),
     collections.tracks.createIndex({ createdAt: -1 }),
+    collections.tracks.createIndex({ senderEmail: 1, sentAt: -1 }),
     collections.events.createIndex({ trackId: 1 }),
     collections.events.createIndex({ openedAt: -1 })
   ]);
@@ -116,8 +117,8 @@ export async function createTrack(input: {
   const now = new Date().toISOString();
   const track: TrackDocument = {
     id: randomUUID(),
-    senderEmail: input.senderEmail,
-    recipientEmail: input.recipientEmail,
+    senderEmail: normalizeEmail(input.senderEmail),
+    recipientEmail: normalizeEmail(input.recipientEmail),
     subject: input.subject ?? "",
     bodyHtml: input.bodyHtml ?? "",
     bodyText: input.bodyText ?? "",
@@ -131,10 +132,17 @@ export async function createTrack(input: {
   return hydrateTrack(track, []);
 }
 
-export async function getTracks() {
+function normalizeEmail(value: string) {
+  return value.toLowerCase().trim();
+}
+
+export async function getTracks(options?: { senderEmail?: string }) {
   const { tracks, events } = await getCollections();
+  const query: Filter<TrackDocument> = { sent: { $ne: false } };
+  if (options?.senderEmail) query.senderEmail = normalizeEmail(options.senderEmail);
+
   const [trackDocs, eventDocs] = await Promise.all([
-    tracks.find({ sent: { $ne: false } }, { projection: { _id: 0 } }).sort({ sentAt: -1, createdAt: -1 }).toArray(),
+    tracks.find(query, { projection: { _id: 0 } }).sort({ sentAt: -1, createdAt: -1 }).toArray(),
     events.find({}, { projection: { _id: 0 } }).toArray()
   ]);
 
@@ -151,6 +159,7 @@ export async function getTrack(id: string) {
 }
 
 export async function updateTrack(id: string, input: {
+  expectedSenderEmail?: string;
   senderEmail?: string;
   recipientEmail?: string;
   subject?: string;
@@ -160,8 +169,12 @@ export async function updateTrack(id: string, input: {
   sent?: boolean;
 }) {
   const { tracks } = await getCollections();
+  if (!input.expectedSenderEmail) return null;
+
+  const existing = await tracks.findOne({ id }, { projection: { _id: 0, senderEmail: 1 } });
+  if (!existing || normalizeEmail(existing.senderEmail) !== normalizeEmail(input.expectedSenderEmail)) return null;
+
   const update: Partial<TrackDocument> = {};
-  if (input.senderEmail) update.senderEmail = input.senderEmail;
   if (input.recipientEmail) update.recipientEmail = input.recipientEmail;
   if (typeof input.subject === "string") update.subject = input.subject;
   if (typeof input.bodyHtml === "string") update.bodyHtml = input.bodyHtml;
@@ -226,10 +239,11 @@ function isGmailInitialActivity(headers: Record<string, string>) {
   return isGmailPrefetch && !isGoogleImageProxyRender;
 }
 
-export async function markSenderView(trackId: string, detectedAt?: string) {
+export async function markSenderView(trackId: string, senderEmail: string, detectedAt?: string) {
   const { tracks, events } = await getCollections();
   const track = await tracks.findOne({ id: trackId });
   if (!track) return null;
+  if (!senderEmail || normalizeEmail(track.senderEmail) !== normalizeEmail(senderEmail)) return null;
 
   const detectedAtMs = detectedAt ? new Date(detectedAt).getTime() : Date.now();
   const markTime = Number.isNaN(detectedAtMs) ? Date.now() : detectedAtMs;

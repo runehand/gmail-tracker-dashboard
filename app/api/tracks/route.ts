@@ -15,8 +15,13 @@ function absoluteBaseUrl(request: NextRequest) {
   return `${proto}://${host}`;
 }
 
-export async function GET() {
-  return NextResponse.json({ tracks: await getTracks() }, { headers: corsHeaders });
+export async function GET(request: NextRequest) {
+  const senderEmail = request.nextUrl.searchParams.get("senderEmail");
+  if (!senderEmail?.trim()) {
+    return NextResponse.json({ tracks: [] }, { headers: corsHeaders });
+  }
+
+  return NextResponse.json({ tracks: await getTracks({ senderEmail }) }, { headers: corsHeaders });
 }
 
 export async function POST(request: NextRequest) {
