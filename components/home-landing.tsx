@@ -1,20 +1,26 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import Link from "next/link";
 import { ArrowRight, BarChart3, MailSearch, ShieldCheck } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-export function HomeLanding() {
+export function HomeLanding({ senders }: { senders: string[] }) {
   const [sender, setSender] = useState("");
+  const [error, setError] = useState("");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const value = sender.trim();
+    const value = sender.trim().toLowerCase();
     if (!value) return;
-    window.location.href = `/senders/${encodeURIComponent(value)}`;
+    const match = senders.find((item) => item.toLowerCase() === value);
+    if (!match) {
+      setError("No tracked emails found for that sender.");
+      return;
+    }
+    setError("");
+    window.location.href = `/senders/${encodeURIComponent(match)}`;
   }
 
   return (
@@ -25,9 +31,6 @@ export function HomeLanding() {
             <BrandMark />
             <span className="text-lg font-semibold">Gmail Tracker</span>
           </div>
-          <Button asChild variant="secondary">
-            <Link href="/pro">Open Pro</Link>
-          </Button>
         </div>
       </header>
 
@@ -41,13 +44,23 @@ export function HomeLanding() {
             </p>
           </div>
           <form onSubmit={submit} className="flex max-w-xl flex-col gap-3 rounded-lg border bg-card p-3 sm:flex-row">
-            <input
-              value={sender}
-              onChange={(event) => setSender(event.target.value)}
-              type="email"
-              placeholder="sender@example.com"
-              className="h-11 min-w-0 flex-1 rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
+            <div className="min-w-0 flex-1">
+              <input
+                value={sender}
+                onChange={(event) => {
+                  setSender(event.target.value);
+                  if (error) setError("");
+                }}
+                type="email"
+                placeholder="sender@example.com"
+                list="gt-senders"
+                className="h-11 w-full rounded-md border bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+              />
+              <datalist id="gt-senders">
+                {senders.map((email) => <option key={email} value={email} />)}
+              </datalist>
+              {error && <div className="mt-2 text-sm text-destructive">{error}</div>}
+            </div>
             <Button type="submit" className="h-11 gap-2">
               View Sender <ArrowRight className="h-4 w-4" />
             </Button>
