@@ -202,14 +202,18 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
   return getTrack(trackId);
 }
 
-export async function markSenderView(trackId: string) {
+export async function markSenderView(trackId: string, detectedAt?: string) {
   const { tracks, events } = await getCollections();
   const track = await tracks.findOne({ id: trackId });
   if (!track) return null;
 
-  const recentCutoff = new Date(Date.now() - 45 * 1000).toISOString();
+  const detectedAtMs = detectedAt ? new Date(detectedAt).getTime() : Date.now();
+  const markTime = Number.isNaN(detectedAtMs) ? Date.now() : detectedAtMs;
+  const recentCutoff = new Date(markTime - 6 * 1000).toISOString();
+  const futureCutoff = new Date(markTime + 2 * 1000).toISOString();
+
   await events.findOneAndUpdate(
-    { trackId, ignored: { $ne: true }, openedAt: { $gte: recentCutoff } },
+    { trackId, ignored: { $ne: true }, openedAt: { $gte: recentCutoff, $lte: futureCutoff } },
     { $set: { ignored: true, ignoredReason: "sender_view" } },
     { sort: { openedAt: -1 } }
   );
