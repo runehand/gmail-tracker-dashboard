@@ -271,6 +271,24 @@ export async function getStats(): Promise<Stats> {
   const dailyMap = new Map<string, number>();
   const dailyRequestMap = new Map<string, { date: string; receiver: number; sender: number; system: number; raw: number }>();
   const hourlyRequestMap = new Map<string, { hour: string; receiver: number; sender: number; system: number; raw: number }>();
+  const dailySentMap = new Map<string, { date: string; sent: number; opened: number; receiverOpens: number }>();
+  const hourlySentMap = new Map<string, { hour: string; sent: number; opened: number; receiverOpens: number }>();
+  const senderMap = new Map<string, {
+    senderEmail: string;
+    sent: number;
+    opened: number;
+    unopened: number;
+    receiverOpens: number;
+    openRate: number;
+    lastSentAt: string | null;
+  }>();
+  const recipientMap = new Map<string, {
+    recipientEmail: string;
+    sent: number;
+    opened: number;
+    receiverOpens: number;
+    lastSentAt: string | null;
+  }>();
 
   for (const event of events) {
     deviceMap.set(event.deviceType, (deviceMap.get(event.deviceType) ?? 0) + 1);
@@ -297,6 +315,55 @@ export async function getStats(): Promise<Stats> {
     hourlyRequestMap.set(hour, hourly);
   }
 
+  for (const track of tracks) {
+    const sentAt = track.sentAt || track.createdAt;
+    const date = sentAt.slice(0, 10);
+    const hour = sentAt.slice(0, 13) + ":00";
+    const wasOpened = track.openCount > 0;
+    const daily = dailySentMap.get(date) ?? { date, sent: 0, opened: 0, receiverOpens: 0 };
+    const hourly = hourlySentMap.get(hour) ?? { hour, sent: 0, opened: 0, receiverOpens: 0 };
+    daily.sent += 1;
+    hourly.sent += 1;
+    daily.receiverOpens += track.openCount;
+    hourly.receiverOpens += track.openCount;
+    if (wasOpened) {
+      daily.opened += 1;
+      hourly.opened += 1;
+    }
+    dailySentMap.set(date, daily);
+    hourlySentMap.set(hour, hourly);
+
+    const sender = senderMap.get(track.senderEmail) ?? {
+      senderEmail: track.senderEmail,
+      sent: 0,
+      opened: 0,
+      unopened: 0,
+      receiverOpens: 0,
+      openRate: 0,
+      lastSentAt: null
+    };
+    sender.sent += 1;
+    sender.receiverOpens += track.openCount;
+    sender.opened += wasOpened ? 1 : 0;
+    sender.unopened = sender.sent - sender.opened;
+    sender.openRate = sender.sent ? Math.round((sender.opened / sender.sent) * 100) : 0;
+    sender.lastSentAt = !sender.lastSentAt || sentAt > sender.lastSentAt ? sentAt : sender.lastSentAt;
+    senderMap.set(track.senderEmail, sender);
+
+    const recipient = recipientMap.get(track.recipientEmail) ?? {
+      recipientEmail: track.recipientEmail,
+      sent: 0,
+      opened: 0,
+      receiverOpens: 0,
+      lastSentAt: null
+    };
+    recipient.sent += 1;
+    recipient.receiverOpens += track.openCount;
+    recipient.opened += wasOpened ? 1 : 0;
+    recipient.lastSentAt = !recipient.lastSentAt || sentAt > recipient.lastSentAt ? sentAt : recipient.lastSentAt;
+    recipientMap.set(track.recipientEmail, recipient);
+  }
+
   return {
     total: tracks.length,
     opened,
@@ -318,6 +385,17 @@ export async function getStats(): Promise<Stats> {
       .slice(-14),
     hourlyRequests: Array.from(hourlyRequestMap.values())
       .sort((a, b) => a.hour.localeCompare(b.hour))
-      .slice(-24)
+      .slice(-24),
+    dailySent: Array.from(dailySentMap.values())
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-30),
+    hourlySent: Array.from(hourlySentMap.values())
+      .sort((a, b) => a.hour.localeCompare(b.hour))
+      .slice(-24),
+    senderPerformance: Array.from(senderMap.values())
+      .sort((a, b) => b.sent - a.sent || b.receiverOpens - a.receiverOpens || a.senderEmail.localeCompare(b.senderEmail)),
+    recipientPerformance: Array.from(recipientMap.values())
+      .sort((a, b) => b.sent - a.sent || b.receiverOpens - a.receiverOpens || a.recipientEmail.localeCompare(b.recipientEmail))
+      .slice(0, 12)
   };
 }

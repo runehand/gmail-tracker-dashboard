@@ -53,4 +53,22 @@ export type Stats = {
   dailyOpens: { date: string; opens: number }[];
   dailyRequests: { date: string; receiver: number; sender: number; system: number; raw: number }[];
   hourlyRequests: { hour: string; receiver: number; sender: number; system: number; raw: number }[];
+  dailySent: { date: string; sent: number; opened: number; receiverOpens: number }[];
+  hourlySent: { hour: string; sent: number; opened: number; receiverOpens: number }[];
+  senderPerformance: {
+    senderEmail: string;
+    sent: number;
+    opened: number;
+    unopened: number;
+    receiverOpens: number;
+    openRate: number;
+    lastSentAt: string | null;
+  }[];
+  recipientPerformance: {
+    recipientEmail: string;
+    sent: number;
+    opened: number;
+    receiverOpens: number;
+    lastSentAt: string | null;
+  }[];
 };

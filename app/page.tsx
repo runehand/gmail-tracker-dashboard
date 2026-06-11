@@ -22,7 +22,7 @@ export default async function DashboardPage() {
             <BrandMark />
             <div>
               <h1 className="text-xl font-semibold">Gmail Tracker</h1>
-              <p className="text-sm text-muted-foreground">Open tracking, read status, and recipient activity.</p>
+              <p className="text-sm text-muted-foreground">Sent email volume, sender usage, and receiver view performance.</p>
             </div>
           </div>
           <Badge variant="outline">Tracking Pixel Backend</Badge>
@@ -34,7 +34,7 @@ export default async function DashboardPage() {
           <MetricCard title="Tracked emails" value={stats.total} icon={Mail} detail="Messages created by the extension" />
           <MetricCard title="Opened" value={stats.opened} icon={MailOpen} detail={`${stats.unopened} still unread`} />
           <MetricCard title="Open rate" value={`${stats.openRate}%`} icon={Eye} detail="Unique emails with at least one open" />
-          <MetricCard title="Receiver opens" value={stats.totalOpens} icon={Activity} detail={`${stats.totalRawRequests} raw pixel requests`} />
+          <MetricCard title="Receiver opens" value={stats.totalOpens} icon={Activity} detail="Receiver activity only" />
         </section>
 
         <ActivityAnalytics stats={stats} />
