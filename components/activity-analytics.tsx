@@ -111,45 +111,28 @@ function TodayActivity({ data }: { data: Stats["todayEmailActivity"] }) {
                 </div>
                 {data.map((item) => {
                   const sentHeight = Math.max(4, (item.sent / maxSent) * 240);
-                  const receiverHeight = item.sent ? Math.max(0, Math.min(sentHeight, (item.receiverOpens / item.sent) * sentHeight)) : 0;
+                  const viewedHeight = item.sent ? Math.max(0, Math.min(sentHeight, (item.viewed / item.sent) * sentHeight)) : 0;
 
                   return (
-                    <details key={item.email} className="group relative">
-                      <summary className="grid cursor-pointer list-none justify-items-center gap-2">
-                        <div className="relative flex h-64 w-full items-end justify-center rounded-md bg-muted/40 px-3 pb-2 pt-4 hover:ring-2 hover:ring-primary/40">
-                          <div className="relative w-10 overflow-hidden rounded-t-md bg-primary/75" style={{ height: `${sentHeight}px` }}>
-                            <div className="absolute bottom-0 left-0 right-0 bg-emerald-500" style={{ height: `${receiverHeight}px` }} />
-                          </div>
-                          <div className="absolute top-2 text-xs font-semibold">{item.sent}</div>
-                          <div className="absolute bottom-2 text-[10px] font-semibold text-white drop-shadow">{item.receiverOpens}</div>
+                    <div key={item.email} className="grid justify-items-center gap-2">
+                      <div className="relative flex h-64 w-full items-end justify-center rounded-md bg-muted/40 px-3 pb-2 pt-4" title={`${item.email}: ${item.sent} sent, ${item.viewed} viewed`}>
+                        <div className="relative w-10 overflow-hidden rounded-t-md bg-primary/75" style={{ height: `${sentHeight}px` }}>
+                          <div className="absolute bottom-0 left-0 right-0 bg-amber-300" style={{ height: `${viewedHeight}px` }} />
                         </div>
-                        <div className="h-10 w-full truncate text-center text-xs font-medium" title={item.email}>{item.email}</div>
-                        <div className="text-center text-[11px] text-muted-foreground">{item.viewed} viewed</div>
-                      </summary>
-                      <div className="absolute z-20 mt-2 w-80 rounded-lg border bg-card p-3 text-xs shadow-xl">
-                        <div className="font-semibold">{item.email}</div>
-                        <div className="mt-2 grid grid-cols-3 gap-2">
-                          <MiniMetric label="Sent" value={item.sent} />
-                          <MiniMetric label="Viewed" value={item.viewed} />
-                          <MiniMetric label="Opens" value={item.receiverOpens} />
-                        </div>
-                        <div className="mt-3 max-h-56 space-y-2 overflow-auto">
-                          {item.emails.map((email) => (
-                            <Link key={email.id} href={`/tracks/${email.id}`} className="block rounded border p-2 hover:bg-muted">
-                              <div className="truncate font-medium">{email.subject}</div>
-                              <div className="truncate text-muted-foreground">To {email.recipientEmail}</div>
-                              <div className="mt-1 text-muted-foreground">{email.openCount} receiver opens</div>
-                            </Link>
-                          ))}
-                        </div>
+                        <div className="absolute top-2 text-xs font-semibold">{item.sent}</div>
+                        {item.viewed > 0 && (
+                          <div className="absolute bottom-2 text-[10px] font-semibold text-amber-950">{item.viewed}</div>
+                        )}
                       </div>
-                    </details>
+                      <div className="h-10 w-full truncate text-center text-xs font-medium" title={item.email}>{item.email}</div>
+                      <div className="text-center text-[11px] text-muted-foreground">{item.viewed} viewed</div>
+                    </div>
                   );
                 })}
               </div>
               <div className="mt-3 flex flex-wrap justify-end gap-4 text-xs text-muted-foreground">
                 <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-primary/75" />Sent total height</span>
-                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />Receiver opens</span>
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-300" />Receiver viewed</span>
               </div>
             </div>
           </div>
