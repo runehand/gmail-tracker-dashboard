@@ -176,14 +176,20 @@ export async function updateTrack(id: string, input: {
   return getTrack(id);
 }
 
-export async function recordOpen(trackId: string, userAgent: string | null, ip: string | null) {
+export async function recordOpen(trackId: string, requestInfo: {
+  method: string;
+  url: string;
+  ip: string | null;
+  headers: Record<string, string>;
+}) {
   const { tracks, events, counters } = await getCollections();
   const track = await tracks.findOne({ id: trackId });
   if (!track) return null;
 
+  const userAgent = requestInfo.headers["user-agent"] ?? null;
   const detected = detectDevice(userAgent);
   const requestIndex = await nextTrackRequestIndex(counters, trackId);
-  const isInitialSystemRequest = requestIndex <= 2;
+  const isInitialSystemRequest = requestIndex <= 1;
   const openedAt = new Date().toISOString();
 
   await events.insertOne({
@@ -191,10 +197,17 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
     trackId,
     requestIndex,
     openedAt,
-    ip,
+    method: requestInfo.method,
+    url: requestInfo.url,
+    ip: requestInfo.ip,
     userAgent,
+    referer: requestInfo.headers.referer ?? requestInfo.headers.referrer ?? null,
+    origin: requestInfo.headers.origin ?? null,
+    accept: requestInfo.headers.accept ?? null,
+    acceptLanguage: requestInfo.headers["accept-language"] ?? null,
     deviceType: detected.deviceType,
     client: detected.client,
+    headers: requestInfo.headers,
     ignored: isInitialSystemRequest || undefined,
     ignoredReason: isInitialSystemRequest ? "initial_system" : undefined
   });
@@ -231,15 +244,46 @@ export async function getEvents(trackId?: string) {
 
 export async function getStats(): Promise<Stats> {
   const tracks = await getTracks();
-  const events = (await getEvents()).filter((event) => !event.ignored);
+  const { events: eventCollection } = await getCollections();
+  const rawEvents = await eventCollection.find({}, { projection: { _id: 0 } }).toArray();
+  const events = rawEvents.filter((event) => !event.ignored);
+  const systemRequests = rawEvents.filter((event) => event.ignoredReason === "initial_system").length;
+  const senderRequests = rawEvents.filter((event) => event.ignoredReason === "sender_view").length;
   const opened = tracks.filter((track) => track.status === "opened").length;
   const deviceMap = new Map<string, number>();
+  const clientMap = new Map<string, number>();
+  const requestTypeMap = new Map<string, number>([
+    ["Receiver", events.length],
+    ["Sender", senderRequests],
+    ["System", systemRequests]
+  ]);
   const dailyMap = new Map<string, number>();
+  const dailyRequestMap = new Map<string, { date: string; receiver: number; sender: number; system: number; raw: number }>();
+  const hourlyRequestMap = new Map<string, { hour: string; receiver: number; sender: number; system: number; raw: number }>();
 
   for (const event of events) {
     deviceMap.set(event.deviceType, (deviceMap.get(event.deviceType) ?? 0) + 1);
+    clientMap.set(event.client, (clientMap.get(event.client) ?? 0) + 1);
     const date = event.openedAt.slice(0, 10);
     dailyMap.set(date, (dailyMap.get(date) ?? 0) + 1);
+  }
+
+  for (const event of rawEvents) {
+    const date = event.openedAt.slice(0, 10);
+    const hour = event.openedAt.slice(0, 13) + ":00";
+    const type = event.ignoredReason === "initial_system"
+      ? "system"
+      : event.ignoredReason === "sender_view"
+        ? "sender"
+        : "receiver";
+    const daily = dailyRequestMap.get(date) ?? { date, receiver: 0, sender: 0, system: 0, raw: 0 };
+    const hourly = hourlyRequestMap.get(hour) ?? { hour, receiver: 0, sender: 0, system: 0, raw: 0 };
+    daily[type] += 1;
+    daily.raw += 1;
+    hourly[type] += 1;
+    hourly.raw += 1;
+    dailyRequestMap.set(date, daily);
+    hourlyRequestMap.set(hour, hourly);
   }
 
   return {
@@ -248,10 +292,21 @@ export async function getStats(): Promise<Stats> {
     unopened: tracks.length - opened,
     openRate: tracks.length ? Math.round((opened / tracks.length) * 100) : 0,
     totalOpens: events.length,
+    totalRawRequests: rawEvents.length,
+    systemRequests,
+    senderRequests,
     deviceBreakdown: Array.from(deviceMap.entries()).map(([label, value]) => ({ label, value })),
+    clientBreakdown: Array.from(clientMap.entries()).map(([label, value]) => ({ label, value })),
+    requestTypeBreakdown: Array.from(requestTypeMap.entries()).map(([label, value]) => ({ label, value })),
     dailyOpens: Array.from(dailyMap.entries())
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-14)
-      .map(([date, opens]) => ({ date, opens }))
+      .map(([date, opens]) => ({ date, opens })),
+    dailyRequests: Array.from(dailyRequestMap.values())
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .slice(-14),
+    hourlyRequests: Array.from(hourlyRequestMap.values())
+      .sort((a, b) => a.hour.localeCompare(b.hour))
+      .slice(-24)
   };
 }

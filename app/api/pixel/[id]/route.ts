@@ -11,9 +11,13 @@ const trackingImage = Buffer.from(
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const trackId = id.replace(/\.(gif|png|jpe?g|webp)$/i, "");
-  const userAgent = request.headers.get("user-agent");
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip");
-  await recordOpen(trackId, userAgent, ip);
+  await recordOpen(trackId, {
+    method: request.method,
+    url: request.url,
+    ip,
+    headers: Object.fromEntries(request.headers.entries())
+  });
 
   return new Response(trackingImage, {
     headers: {

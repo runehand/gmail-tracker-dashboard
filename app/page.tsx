@@ -1,8 +1,7 @@
 import { Activity, Eye, Mail, MailOpen } from "lucide-react";
-import { DeviceChart } from "@/components/device-chart";
+import { ActivityAnalytics } from "@/components/activity-analytics";
 import { EmailTable } from "@/components/email-table";
 import { MetricCard } from "@/components/metric-card";
-import { OpenChart } from "@/components/open-chart";
 import { SenderTable } from "@/components/sender-table";
 import { Badge } from "@/components/ui/badge";
 import { BrandMark } from "@/components/brand-mark";
@@ -35,13 +34,10 @@ export default async function DashboardPage() {
           <MetricCard title="Tracked emails" value={stats.total} icon={Mail} detail="Messages created by the extension" />
           <MetricCard title="Opened" value={stats.opened} icon={MailOpen} detail={`${stats.unopened} still unread`} />
           <MetricCard title="Open rate" value={`${stats.openRate}%`} icon={Eye} detail="Unique emails with at least one open" />
-          <MetricCard title="Total opens" value={stats.totalOpens} icon={Activity} detail="Includes repeat opens" />
+          <MetricCard title="Receiver opens" value={stats.totalOpens} icon={Activity} detail={`${stats.totalRawRequests} raw pixel requests`} />
         </section>
 
-        <section className="grid gap-4 lg:grid-cols-3">
-          <OpenChart data={stats.dailyOpens} />
-          <DeviceChart data={stats.deviceBreakdown} />
-        </section>
+        <ActivityAnalytics stats={stats} />
 
         <SenderTable senders={senders} />
 
