@@ -66,7 +66,7 @@ export function ActivityTimeline({ events }: { events: OpenEvent[] }) {
 }
 
 function eventLabel(event: OpenEvent) {
-  if (event.ignoredReason === "initial_system") return "Initial system request";
+  if (event.ignoredReason === "initial_system") return "Gmail initial activity";
   if (event.ignoredReason === "sender_view") return "Sender activity";
   return "Receiver activity";
 }

@@ -189,7 +189,7 @@ export async function recordOpen(trackId: string, requestInfo: {
   const userAgent = requestInfo.headers["user-agent"] ?? null;
   const detected = detectDevice(userAgent);
   const requestIndex = await nextTrackRequestIndex(counters, trackId);
-  const isInitialSystemRequest = requestIndex <= 1;
+  const isInitialSystemRequest = isGmailInitialActivity(requestInfo.headers);
   const openedAt = new Date().toISOString();
 
   await events.insertOne({
@@ -213,6 +213,17 @@ export async function recordOpen(trackId: string, requestInfo: {
   });
 
   return getTrack(trackId);
+}
+
+function isGmailInitialActivity(headers: Record<string, string>) {
+  const userAgent = (headers["user-agent"] ?? "").toLowerCase();
+  const referer = (headers.referer ?? headers.referrer ?? "").toLowerCase();
+  const from = headers.from;
+  const hasEmptyFromHeader = Object.prototype.hasOwnProperty.call(headers, "from") && !String(from ?? "").trim();
+  const isGoogleImageProxyRender = userAgent.includes("googleimageproxy") || userAgent.includes("ggpht.com");
+  const isGmailPrefetch = referer.includes("mail.google.com") || hasEmptyFromHeader;
+
+  return isGmailPrefetch && !isGoogleImageProxyRender;
 }
 
 export async function markSenderView(trackId: string, detectedAt?: string) {
