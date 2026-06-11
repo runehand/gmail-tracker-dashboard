@@ -7,6 +7,7 @@ import { MetricCard } from "@/components/metric-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { BrandMark } from "@/components/brand-mark";
 import { getEvents, getTrack } from "@/lib/db";
 import { summarizeTrackEvents } from "@/lib/analytics";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
@@ -24,9 +25,12 @@ export default async function TrackPage({ params }: { params: Promise<{ id: stri
     <main className="min-h-screen">
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-semibold">{track.subject || "(No subject)"}</h1>
-            <p className="text-sm text-muted-foreground">To {track.recipientEmail} · From {track.senderEmail}</p>
+          <div className="flex items-center gap-3">
+            <BrandMark />
+            <div>
+              <h1 className="text-xl font-semibold">{track.subject || "(No subject)"}</h1>
+              <p className="text-sm text-muted-foreground">To {track.recipientEmail} · From {track.senderEmail}</p>
+            </div>
           </div>
           <Button asChild variant="secondary">
             <Link href={`/senders/${encodeURIComponent(track.senderEmail)}`}><ArrowLeft className="mr-2 h-4 w-4" />Sender</Link>
@@ -57,6 +61,20 @@ export default async function TrackPage({ params }: { params: Promise<{ id: stri
           </Card>
           <DeviceChart data={summary.deviceBreakdown} />
         </section>
+        <Card>
+          <CardHeader>
+            <CardTitle>Email Content</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {track.bodyText ? (
+              <div className="max-h-96 overflow-auto rounded-lg border bg-muted/40 p-4 text-sm leading-6 whitespace-pre-wrap">
+                {track.bodyText}
+              </div>
+            ) : (
+              <div className="rounded-lg border px-4 py-8 text-center text-sm text-muted-foreground">No email content captured.</div>
+            )}
+          </CardContent>
+        </Card>
         <ActivityTimeline events={events} />
       </div>
     </main>

@@ -4,6 +4,7 @@ import { ArrowLeft, Eye, Mail, MailOpen } from "lucide-react";
 import { EmailTable } from "@/components/email-table";
 import { MetricCard } from "@/components/metric-card";
 import { Button } from "@/components/ui/button";
+import { BrandMark } from "@/components/brand-mark";
 import { getTracks } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -22,9 +23,12 @@ export default async function SenderPage({ params }: { params: Promise<{ sender:
     <main className="min-h-screen">
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-semibold">{senderEmail}</h1>
-            <p className="text-sm text-muted-foreground">Tracked emails and recipient activity for this sender.</p>
+          <div className="flex items-center gap-3">
+            <BrandMark />
+            <div>
+              <h1 className="text-xl font-semibold">{senderEmail}</h1>
+              <p className="text-sm text-muted-foreground">Tracked emails and recipient activity for this sender.</p>
+            </div>
           </div>
           <Button asChild variant="secondary"><Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Dashboard</Link></Button>
         </div>

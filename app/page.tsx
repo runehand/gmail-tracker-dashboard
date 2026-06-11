@@ -5,6 +5,7 @@ import { MetricCard } from "@/components/metric-card";
 import { OpenChart } from "@/components/open-chart";
 import { SenderTable } from "@/components/sender-table";
 import { Badge } from "@/components/ui/badge";
+import { BrandMark } from "@/components/brand-mark";
 import { summarizeSenders } from "@/lib/analytics";
 import { getStats, getTracks } from "@/lib/db";
 
@@ -18,9 +19,12 @@ export default async function DashboardPage() {
     <main className="min-h-screen">
       <header className="border-b bg-card">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-semibold">Gmail Tracker</h1>
-            <p className="text-sm text-muted-foreground">Open tracking, read status, and recipient activity.</p>
+          <div className="flex items-center gap-3">
+            <BrandMark />
+            <div>
+              <h1 className="text-xl font-semibold">Gmail Tracker</h1>
+              <p className="text-sm text-muted-foreground">Open tracking, read status, and recipient activity.</p>
+            </div>
           </div>
           <Badge variant="outline">Tracking Pixel Backend</Badge>
         </div>

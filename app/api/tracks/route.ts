@@ -29,6 +29,8 @@ export async function POST(request: NextRequest) {
     senderEmail: String(body.senderEmail),
     recipientEmail: String(body.recipientEmail),
     subject: body.subject ? String(body.subject) : "",
+    bodyHtml: body.bodyHtml ? String(body.bodyHtml) : "",
+    bodyText: body.bodyText ? String(body.bodyText) : "",
     gmailMessageKey: body.gmailMessageKey ? String(body.gmailMessageKey) : undefined,
     sentAt: body.sentAt ? String(body.sentAt) : undefined
   });

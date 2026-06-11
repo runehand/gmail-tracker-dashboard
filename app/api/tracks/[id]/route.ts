@@ -22,7 +22,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const track = await updateTrack(id, {
     senderEmail: body.senderEmail ? String(body.senderEmail) : undefined,
     recipientEmail: body.recipientEmail ? String(body.recipientEmail) : undefined,
-    subject: typeof body.subject === "string" ? body.subject : undefined
+    subject: typeof body.subject === "string" ? body.subject : undefined,
+    bodyHtml: typeof body.bodyHtml === "string" ? body.bodyHtml : undefined,
+    bodyText: typeof body.bodyText === "string" ? body.bodyText : undefined
   });
 
   if (!track) return NextResponse.json({ error: "Not found" }, { status: 404, headers: corsHeaders });

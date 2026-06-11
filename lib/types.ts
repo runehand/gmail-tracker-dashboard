@@ -3,6 +3,8 @@ export type Track = {
   senderEmail: string;
   recipientEmail: string;
   subject: string;
+  bodyHtml: string;
+  bodyText: string;
   gmailMessageKey: string;
   createdAt: string;
   sentAt: string;

@@ -9,6 +9,8 @@ type TrackDocument = {
   senderEmail: string;
   recipientEmail: string;
   subject: string;
+  bodyHtml: string;
+  bodyText: string;
   gmailMessageKey: string;
   createdAt: string;
   sentAt: string;
@@ -77,6 +79,8 @@ function hydrateTrack(track: TrackDocument, events: OpenEventDocument[]): Track 
 
   return {
     ...track,
+    bodyHtml: track.bodyHtml ?? "",
+    bodyText: track.bodyText ?? "",
     status: trackEvents.length > 0 ? "opened" : "unopened",
     openCount: trackEvents.length,
     selfOpenCount: allTrackEvents.length - trackEvents.length,
@@ -91,6 +95,8 @@ export async function createTrack(input: {
   senderEmail: string;
   recipientEmail: string;
   subject?: string;
+  bodyHtml?: string;
+  bodyText?: string;
   gmailMessageKey?: string;
   sentAt?: string;
 }) {
@@ -101,6 +107,8 @@ export async function createTrack(input: {
     senderEmail: input.senderEmail,
     recipientEmail: input.recipientEmail,
     subject: input.subject ?? "",
+    bodyHtml: input.bodyHtml ?? "",
+    bodyText: input.bodyText ?? "",
     gmailMessageKey: input.gmailMessageKey || `${input.senderEmail}:${Date.now()}:${randomUUID()}`,
     createdAt: now,
     sentAt: input.sentAt ?? now
@@ -129,12 +137,20 @@ export async function getTrack(id: string) {
   return hydrateTrack(track, eventDocs);
 }
 
-export async function updateTrack(id: string, input: { senderEmail?: string; recipientEmail?: string; subject?: string }) {
+export async function updateTrack(id: string, input: {
+  senderEmail?: string;
+  recipientEmail?: string;
+  subject?: string;
+  bodyHtml?: string;
+  bodyText?: string;
+}) {
   const { tracks } = await getCollections();
   const update: Partial<TrackDocument> = {};
   if (input.senderEmail) update.senderEmail = input.senderEmail;
   if (input.recipientEmail) update.recipientEmail = input.recipientEmail;
   if (typeof input.subject === "string") update.subject = input.subject;
+  if (typeof input.bodyHtml === "string") update.bodyHtml = input.bodyHtml;
+  if (typeof input.bodyText === "string") update.bodyText = input.bodyText;
 
   if (Object.keys(update).length) {
     await tracks.updateOne({ id }, { $set: update });
