@@ -69,15 +69,17 @@ async function nextEventId(counters: MongoCollections["counters"]) {
 }
 
 function hydrateTrack(track: TrackDocument, events: OpenEventDocument[]): Track {
-  const trackEvents = events
+  const allTrackEvents = events
     .filter((event) => event.trackId === track.id)
     .sort((a, b) => a.openedAt.localeCompare(b.openedAt));
+  const trackEvents = allTrackEvents.filter((event) => !event.ignored);
   const last = trackEvents.at(-1);
 
   return {
     ...track,
     status: trackEvents.length > 0 ? "opened" : "unopened",
     openCount: trackEvents.length,
+    selfOpenCount: allTrackEvents.length - trackEvents.length,
     firstOpenedAt: trackEvents[0]?.openedAt ?? null,
     lastOpenedAt: last?.openedAt ?? null,
     lastDevice: last?.deviceType ?? null,
@@ -140,8 +142,24 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
     ip,
     userAgent,
     deviceType: detected.deviceType,
-    client: detected.client
+    client: detected.client,
+    ignored: false
   });
+
+  return getTrack(trackId);
+}
+
+export async function markSenderView(trackId: string) {
+  const { tracks, events } = await getCollections();
+  const track = await tracks.findOne({ id: trackId });
+  if (!track) return null;
+
+  const recentCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  await events.findOneAndUpdate(
+    { trackId, ignored: { $ne: true }, openedAt: { $gte: recentCutoff } },
+    { $set: { ignored: true, ignoredReason: "sender_view" } },
+    { sort: { openedAt: -1 } }
+  );
 
   return getTrack(trackId);
 }
@@ -156,7 +174,7 @@ export async function getEvents(trackId?: string) {
 
 export async function getStats(): Promise<Stats> {
   const tracks = await getTracks();
-  const events = await getEvents();
+  const events = (await getEvents()).filter((event) => !event.ignored);
   const opened = tracks.filter((track) => track.status === "opened").length;
   const deviceMap = new Map<string, number>();
   const dailyMap = new Map<string, number>();

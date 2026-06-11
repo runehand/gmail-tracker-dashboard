@@ -8,6 +8,7 @@ export type Track = {
   sentAt: string;
   status: "opened" | "unopened";
   openCount: number;
+  selfOpenCount: number;
   firstOpenedAt: string | null;
   lastOpenedAt: string | null;
   lastDevice: string | null;
@@ -22,6 +23,8 @@ export type OpenEvent = {
   userAgent: string | null;
   deviceType: string;
   client: string;
+  ignored?: boolean;
+  ignoredReason?: "sender_view";
 };
 
 export type Stats = {

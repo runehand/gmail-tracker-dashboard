@@ -20,6 +20,8 @@ The backend stores data in MongoDB. Set `MONGODB_URI` in `.env.local`.
 3. When the recipient opens the email and images load, the backend records an open event.
 4. Dashboard shows sent/open/unread counts, open rate, recent opens, device guesses, and per-email history.
 
+Sender-side Gmail views are corrected through `/api/tracks/:id/sender-view`; those recent self views are marked ignored and do not count as recipient opens.
+
 ## Limits
 
 Email open tracking depends on remote image loading. If the recipient blocks images, no open is recorded. Gmail and other clients may proxy image requests, so device, IP, and location are approximate.
