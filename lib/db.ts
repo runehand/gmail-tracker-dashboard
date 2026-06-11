@@ -14,6 +14,7 @@ type TrackDocument = {
   gmailMessageKey: string;
   createdAt: string;
   sentAt: string;
+  sent?: boolean;
 };
 
 type OpenEventDocument = OpenEvent;
@@ -81,6 +82,7 @@ function hydrateTrack(track: TrackDocument, events: OpenEventDocument[]): Track 
     ...track,
     bodyHtml: track.bodyHtml ?? "",
     bodyText: track.bodyText ?? "",
+    sent: track.sent ?? true,
     status: trackEvents.length > 0 ? "opened" : "unopened",
     openCount: trackEvents.length,
     selfOpenCount: allTrackEvents.length - trackEvents.length,
@@ -99,6 +101,7 @@ export async function createTrack(input: {
   bodyText?: string;
   gmailMessageKey?: string;
   sentAt?: string;
+  sent?: boolean;
 }) {
   const { tracks } = await getCollections();
   const now = new Date().toISOString();
@@ -111,7 +114,8 @@ export async function createTrack(input: {
     bodyText: input.bodyText ?? "",
     gmailMessageKey: input.gmailMessageKey || `${input.senderEmail}:${Date.now()}:${randomUUID()}`,
     createdAt: now,
-    sentAt: input.sentAt ?? now
+    sentAt: input.sentAt ?? now,
+    sent: input.sent ?? false
   };
 
   await tracks.insertOne(track);
@@ -121,7 +125,7 @@ export async function createTrack(input: {
 export async function getTracks() {
   const { tracks, events } = await getCollections();
   const [trackDocs, eventDocs] = await Promise.all([
-    tracks.find({}, { projection: { _id: 0 } }).sort({ createdAt: -1 }).toArray(),
+    tracks.find({ sent: { $ne: false } }, { projection: { _id: 0 } }).sort({ sentAt: -1, createdAt: -1 }).toArray(),
     events.find({}, { projection: { _id: 0 } }).toArray()
   ]);
 
@@ -144,6 +148,7 @@ export async function updateTrack(id: string, input: {
   bodyHtml?: string;
   bodyText?: string;
   sentAt?: string;
+  sent?: boolean;
 }) {
   const { tracks } = await getCollections();
   const update: Partial<TrackDocument> = {};
@@ -153,6 +158,7 @@ export async function updateTrack(id: string, input: {
   if (typeof input.bodyHtml === "string") update.bodyHtml = input.bodyHtml;
   if (typeof input.bodyText === "string") update.bodyText = input.bodyText;
   if (typeof input.sentAt === "string") update.sentAt = input.sentAt;
+  if (typeof input.sent === "boolean") update.sent = input.sent;
 
   if (Object.keys(update).length) {
     await tracks.updateOne({ id }, { $set: update });

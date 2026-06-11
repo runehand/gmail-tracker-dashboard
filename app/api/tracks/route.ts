@@ -32,7 +32,8 @@ export async function POST(request: NextRequest) {
     bodyHtml: body.bodyHtml ? String(body.bodyHtml) : "",
     bodyText: body.bodyText ? String(body.bodyText) : "",
     gmailMessageKey: body.gmailMessageKey ? String(body.gmailMessageKey) : undefined,
-    sentAt: body.sentAt ? String(body.sentAt) : undefined
+    sentAt: body.sentAt ? String(body.sentAt) : undefined,
+    sent: typeof body.sent === "boolean" ? body.sent : false
   });
 
   if (!track) {

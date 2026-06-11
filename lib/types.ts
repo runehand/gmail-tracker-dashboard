@@ -8,6 +8,7 @@ export type Track = {
   gmailMessageKey: string;
   createdAt: string;
   sentAt: string;
+  sent: boolean;
   status: "opened" | "unopened";
   openCount: number;
   selfOpenCount: number;
