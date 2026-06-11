@@ -143,6 +143,7 @@ export async function updateTrack(id: string, input: {
   subject?: string;
   bodyHtml?: string;
   bodyText?: string;
+  sentAt?: string;
 }) {
   const { tracks } = await getCollections();
   const update: Partial<TrackDocument> = {};
@@ -151,6 +152,7 @@ export async function updateTrack(id: string, input: {
   if (typeof input.subject === "string") update.subject = input.subject;
   if (typeof input.bodyHtml === "string") update.bodyHtml = input.bodyHtml;
   if (typeof input.bodyText === "string") update.bodyText = input.bodyText;
+  if (typeof input.sentAt === "string") update.sentAt = input.sentAt;
 
   if (Object.keys(update).length) {
     await tracks.updateOne({ id }, { $set: update });
@@ -169,7 +171,7 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
   const openedAt = new Date().toISOString();
   const secondsSinceSent = Math.abs((Date.now() - new Date(track.sentAt || track.createdAt).getTime()) / 1000);
   const isGooglePrefetch = previousEvents === 0
-    && detected.client === "Gmail image proxy"
+    && (detected.client === "Gmail image proxy" || detected.client === "Unknown client")
     && secondsSinceSent <= 30;
 
   await events.insertOne({

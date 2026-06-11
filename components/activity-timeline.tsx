@@ -40,6 +40,6 @@ export function ActivityTimeline({ events }: { events: OpenEvent[] }) {
 }
 
 function ignoredLabel(reason: OpenEvent["ignoredReason"]) {
-  if (reason === "google_prefetch") return "Google image proxy prefetch ignored";
+  if (reason === "google_prefetch") return "Google/system image activity ignored";
   return "Sender view ignored";
 }
