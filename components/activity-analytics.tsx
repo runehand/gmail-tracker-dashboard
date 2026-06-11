@@ -92,7 +92,7 @@ function EmailTimeHeatmap({ data }: { data: Stats["emailTimeActivity"] }) {
 }
 
 function TodayActivity({ data }: { data: Stats["todayEmailActivity"] }) {
-  const max = Math.max(...data.map((item) => Math.max(item.sent, item.receiverOpens)), 1);
+  const maxSent = Math.max(...data.map((item) => item.sent), 1);
 
   return (
     <Card>
@@ -101,33 +101,57 @@ function TodayActivity({ data }: { data: Stats["todayEmailActivity"] }) {
       </CardHeader>
       <CardContent>
         {data.length ? (
-          <div className="space-y-4">
-            {data.map((item) => (
-              <details key={item.email} className="rounded-lg border p-3">
-                <summary className="cursor-pointer list-none">
-                  <div className="grid gap-2 md:grid-cols-[220px_1fr_96px] md:items-center">
-                    <div className="truncate font-medium" title={item.email}>{item.email}</div>
-                    <div className="grid gap-1">
-                      <Bar label="Sent" value={item.sent} max={max} tone="primary" />
-                      <Bar label="Receiver opens" value={item.receiverOpens} max={max} tone="accent" />
-                    </div>
-                    <div className="text-right text-xs text-muted-foreground">
-                      <div>{item.viewed} viewed</div>
-                      <div>{item.sent - item.viewed} no view</div>
-                    </div>
-                  </div>
-                </summary>
-                <div className="mt-3 grid gap-2 md:grid-cols-2 lg:grid-cols-3">
-                  {item.emails.map((email) => (
-                    <Link key={email.id} href={`/tracks/${email.id}`} className="rounded border p-3 text-sm hover:bg-muted">
-                      <div className="truncate font-medium">{email.subject}</div>
-                      <div className="truncate text-xs text-muted-foreground">To {email.recipientEmail}</div>
-                      <div className="mt-2 text-xs text-muted-foreground">{email.openCount} receiver opens</div>
-                    </Link>
-                  ))}
+          <div className="overflow-x-auto">
+            <div className="min-w-[720px]">
+              <div className="grid items-end gap-3 border-b pb-3" style={{ gridTemplateColumns: `72px repeat(${data.length}, minmax(92px, 1fr))` }}>
+                <div className="flex h-64 flex-col justify-between text-right text-[11px] text-muted-foreground">
+                  <span>{maxSent}</span>
+                  <span>{Math.round(maxSent / 2)}</span>
+                  <span>0</span>
                 </div>
-              </details>
-            ))}
+                {data.map((item) => {
+                  const sentHeight = Math.max(4, (item.sent / maxSent) * 240);
+                  const receiverHeight = item.sent ? Math.max(0, Math.min(sentHeight, (item.receiverOpens / item.sent) * sentHeight)) : 0;
+
+                  return (
+                    <details key={item.email} className="group relative">
+                      <summary className="grid cursor-pointer list-none justify-items-center gap-2">
+                        <div className="relative flex h-64 w-full items-end justify-center rounded-md bg-muted/40 px-3 pb-2 pt-4 hover:ring-2 hover:ring-primary/40">
+                          <div className="relative w-10 overflow-hidden rounded-t-md bg-primary/75" style={{ height: `${sentHeight}px` }}>
+                            <div className="absolute bottom-0 left-0 right-0 bg-emerald-500" style={{ height: `${receiverHeight}px` }} />
+                          </div>
+                          <div className="absolute top-2 text-xs font-semibold">{item.sent}</div>
+                          <div className="absolute bottom-2 text-[10px] font-semibold text-white drop-shadow">{item.receiverOpens}</div>
+                        </div>
+                        <div className="h-10 w-full truncate text-center text-xs font-medium" title={item.email}>{item.email}</div>
+                        <div className="text-center text-[11px] text-muted-foreground">{item.viewed} viewed</div>
+                      </summary>
+                      <div className="absolute z-20 mt-2 w-80 rounded-lg border bg-card p-3 text-xs shadow-xl">
+                        <div className="font-semibold">{item.email}</div>
+                        <div className="mt-2 grid grid-cols-3 gap-2">
+                          <MiniMetric label="Sent" value={item.sent} />
+                          <MiniMetric label="Viewed" value={item.viewed} />
+                          <MiniMetric label="Opens" value={item.receiverOpens} />
+                        </div>
+                        <div className="mt-3 max-h-56 space-y-2 overflow-auto">
+                          {item.emails.map((email) => (
+                            <Link key={email.id} href={`/tracks/${email.id}`} className="block rounded border p-2 hover:bg-muted">
+                              <div className="truncate font-medium">{email.subject}</div>
+                              <div className="truncate text-muted-foreground">To {email.recipientEmail}</div>
+                              <div className="mt-1 text-muted-foreground">{email.openCount} receiver opens</div>
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    </details>
+                  );
+                })}
+              </div>
+              <div className="mt-3 flex flex-wrap justify-end gap-4 text-xs text-muted-foreground">
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-primary/75" />Sent total height</span>
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />Receiver opens</span>
+              </div>
+            </div>
           </div>
         ) : (
           <Empty label="No emails sent today" />
@@ -151,18 +175,6 @@ function MiniMetric({ label, value }: { label: string; value: number }) {
     <div className="rounded bg-muted p-2 text-center">
       <div className="font-semibold">{value}</div>
       <div className="text-muted-foreground">{label}</div>
-    </div>
-  );
-}
-
-function Bar({ label, value, max, tone }: { label: string; value: number; max: number; tone: "primary" | "accent" }) {
-  return (
-    <div className="grid grid-cols-[104px_1fr_36px] items-center gap-2 text-xs">
-      <span className="text-muted-foreground">{label}</span>
-      <div className="h-2 rounded-full bg-muted">
-        <div className={`h-2 rounded-full ${tone === "primary" ? "bg-primary" : "bg-accent"}`} style={{ width: `${Math.max(3, (value / max) * 100)}%` }} />
-      </div>
-      <span className="text-right text-muted-foreground">{value}</span>
     </div>
   );
 }
