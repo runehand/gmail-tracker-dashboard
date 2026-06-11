@@ -32,14 +32,17 @@ export function summarizeSenders(tracks: Track[]) {
 }
 
 export function summarizeTrackEvents(events: OpenEvent[]) {
+  const counted = events.filter((event) => !event.ignored);
+  const ignored = events.filter((event) => event.ignored);
   const deviceMap = new Map<string, number>();
 
-  for (const event of events) {
+  for (const event of counted) {
     deviceMap.set(event.deviceType, (deviceMap.get(event.deviceType) ?? 0) + 1);
   }
 
   return {
-    counted: events,
+    counted,
+    ignored,
     deviceBreakdown: Array.from(deviceMap.entries()).map(([label, value]) => ({ label, value }))
   };
 }

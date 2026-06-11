@@ -21,11 +21,14 @@ export type Track = {
 export type OpenEvent = {
   id: number;
   trackId: string;
+  requestIndex?: number;
   openedAt: string;
   ip: string | null;
   userAgent: string | null;
   deviceType: string;
   client: string;
+  ignored?: boolean;
+  ignoredReason?: "initial_system";
 };
 
 export type Stats = {

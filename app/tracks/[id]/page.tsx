@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Eye, MailOpen, MousePointerClick, Smartphone } from "lucide-react";
+import { ArrowLeft, Eye, MailOpen, MousePointerClick, ShieldOff, Smartphone } from "lucide-react";
 import { ActivityTimeline } from "@/components/activity-timeline";
 import { DeviceChart } from "@/components/device-chart";
 import { MetricCard } from "@/components/metric-card";
@@ -40,8 +40,9 @@ export default async function TrackPage({ params }: { params: Promise<{ id: stri
       </header>
       <div className="mx-auto max-w-7xl space-y-6 px-6 py-6">
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <MetricCard title="Pixel requests" value={track.openCount} icon={Eye} detail={track.openCount ? `Last ${formatRelativeTime(track.lastOpenedAt)}` : "No requests yet"} />
+          <MetricCard title="Tracked opens" value={track.openCount} icon={Eye} detail={track.openCount ? `Last ${formatRelativeTime(track.lastOpenedAt)}` : "No receiver opens yet"} />
           <MetricCard title="Raw events" value={events.length} icon={MousePointerClick} detail="Every tracking URL request" />
+          <MetricCard title="System requests" value={summary.ignored.length} icon={ShieldOff} detail="First two requests ignored" />
           <MetricCard title="Last device" value={track.lastDevice ?? "Unknown"} icon={Smartphone} detail={track.lastClient ?? "No client yet"} />
           <MetricCard title="Status" value={track.status === "opened" ? "Viewed" : "No view"} icon={MailOpen} detail={formatDate(track.lastOpenedAt)} />
         </section>
@@ -56,7 +57,7 @@ export default async function TrackPage({ params }: { params: Promise<{ id: stri
               <Detail label="Sent" value={formatDate(track.sentAt)} />
               <Detail label="Tracking ID" value={track.id} />
               <div className="md:col-span-2">
-                <Badge variant={track.status === "opened" ? "default" : "secondary"}>{track.status === "opened" ? "Pixel requested" : "No pixel requests"}</Badge>
+                <Badge variant={track.status === "opened" ? "default" : "secondary"}>{track.status === "opened" ? "Tracked open" : "No tracked opens"}</Badge>
               </div>
             </CardContent>
           </Card>

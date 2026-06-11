@@ -38,7 +38,7 @@ export default async function SenderPage({ params }: { params: Promise<{ sender:
           <MetricCard title="Emails" value={tracks.length} icon={Mail} detail="Tracked from this sender" />
           <MetricCard title="Viewed" value={opened} icon={MailOpen} detail={`${tracks.length - opened} with no view`} />
           <MetricCard title="Open rate" value={`${openRate}%`} icon={Eye} detail="Unique emails viewed" />
-          <MetricCard title="Total requests" value={totalOpens} icon={Eye} detail="Every tracking URL request" />
+          <MetricCard title="Total opens" value={totalOpens} icon={Eye} detail="After first two system requests" />
         </section>
         <EmailTable tracks={tracks} />
       </div>

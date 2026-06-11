@@ -71,11 +71,20 @@ async function nextEventId(counters: MongoCollections["counters"]) {
   return result?.seq ?? 1;
 }
 
+async function nextTrackRequestIndex(counters: MongoCollections["counters"], trackId: string) {
+  const result = await counters.findOneAndUpdate(
+    { _id: `track_events:${trackId}` },
+    { $inc: { seq: 1 } },
+    { upsert: true, returnDocument: "after" }
+  );
+  return result?.seq ?? 1;
+}
+
 function hydrateTrack(track: TrackDocument, events: OpenEventDocument[]): Track {
   const allTrackEvents = events
     .filter((event) => event.trackId === track.id)
     .sort((a, b) => a.openedAt.localeCompare(b.openedAt));
-  const trackEvents = allTrackEvents;
+  const trackEvents = allTrackEvents.filter((event) => !event.ignored);
   const last = trackEvents.at(-1);
 
   return {
@@ -85,7 +94,7 @@ function hydrateTrack(track: TrackDocument, events: OpenEventDocument[]): Track 
     sent: track.sent ?? true,
     status: trackEvents.length > 0 ? "opened" : "unopened",
     openCount: trackEvents.length,
-    selfOpenCount: 0,
+    selfOpenCount: allTrackEvents.length - trackEvents.length,
     firstOpenedAt: trackEvents[0]?.openedAt ?? null,
     lastOpenedAt: last?.openedAt ?? null,
     lastDevice: last?.deviceType ?? null,
@@ -173,16 +182,21 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
   if (!track) return null;
 
   const detected = detectDevice(userAgent);
+  const requestIndex = await nextTrackRequestIndex(counters, trackId);
+  const isInitialSystemRequest = requestIndex <= 2;
   const openedAt = new Date().toISOString();
 
   await events.insertOne({
     id: await nextEventId(counters),
     trackId,
+    requestIndex,
     openedAt,
     ip,
     userAgent,
     deviceType: detected.deviceType,
-    client: detected.client
+    client: detected.client,
+    ignored: isInitialSystemRequest || undefined,
+    ignoredReason: isInitialSystemRequest ? "initial_system" : undefined
   });
 
   return getTrack(trackId);
@@ -206,7 +220,7 @@ export async function getEvents(trackId?: string) {
 
 export async function getStats(): Promise<Stats> {
   const tracks = await getTracks();
-  const events = await getEvents();
+  const events = (await getEvents()).filter((event) => !event.ignored);
   const opened = tracks.filter((track) => track.status === "opened").length;
   const deviceMap = new Map<string, number>();
   const dailyMap = new Map<string, number>();
