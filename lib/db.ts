@@ -184,7 +184,17 @@ export async function markSenderView(trackId: string) {
   const track = await tracks.findOne({ id: trackId });
   if (!track) return null;
 
-  const recentCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+  const recentCutoff = new Date(Date.now() - 20 * 1000).toISOString();
+  const duplicateCutoff = new Date(Date.now() - 60 * 1000).toISOString();
+  const existingCorrection = await events.findOne({
+    trackId,
+    ignored: true,
+    ignoredReason: "sender_view",
+    openedAt: { $gte: duplicateCutoff }
+  });
+
+  if (existingCorrection) return getTrack(trackId);
+
   await events.findOneAndUpdate(
     { trackId, ignored: { $ne: true }, openedAt: { $gte: recentCutoff } },
     { $set: { ignored: true, ignoredReason: "sender_view" } },
