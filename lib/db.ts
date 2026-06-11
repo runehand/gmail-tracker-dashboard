@@ -1,6 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { MongoClient, type Collection, type Filter } from "mongodb";
+import { MongoClient, type Collection } from "mongodb";
 import { detectDevice } from "./device";
 import type { OpenEvent, Stats, Track } from "./types";
 
@@ -74,9 +74,8 @@ async function nextEventId(counters: MongoCollections["counters"]) {
 function hydrateTrack(track: TrackDocument, events: OpenEventDocument[]): Track {
   const allTrackEvents = events
     .filter((event) => event.trackId === track.id)
-    .filter((event) => event.ignoredReason !== "google_prefetch")
     .sort((a, b) => a.openedAt.localeCompare(b.openedAt));
-  const trackEvents = allTrackEvents.filter((event) => !event.ignored);
+  const trackEvents = allTrackEvents;
   const last = trackEvents.at(-1);
 
   return {
@@ -86,7 +85,7 @@ function hydrateTrack(track: TrackDocument, events: OpenEventDocument[]): Track 
     sent: track.sent ?? true,
     status: trackEvents.length > 0 ? "opened" : "unopened",
     openCount: trackEvents.length,
-    selfOpenCount: allTrackEvents.length - trackEvents.length,
+    selfOpenCount: 0,
     firstOpenedAt: trackEvents[0]?.openedAt ?? null,
     lastOpenedAt: last?.openedAt ?? null,
     lastDevice: last?.deviceType ?? null,
@@ -174,14 +173,7 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
   if (!track) return null;
 
   const detected = detectDevice(userAgent);
-  const previousEvents = await events.countDocuments({ trackId });
   const openedAt = new Date().toISOString();
-  const sentAtMs = new Date(track.sentAt || track.createdAt).getTime();
-  const secondsSinceSent = Number.isNaN(sentAtMs) ? Number.POSITIVE_INFINITY : (Date.now() - sentAtMs) / 1000;
-  const isInitialSystemLoad = previousEvents === 0
-    && secondsSinceSent >= -5
-    && secondsSinceSent <= 120
-    && isSystemImageLoad(detected.client);
 
   await events.insertOne({
     id: await nextEventId(counters),
@@ -190,49 +182,23 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
     ip,
     userAgent,
     deviceType: detected.deviceType,
-    client: detected.client,
-    ignored: isInitialSystemLoad || undefined,
-    ignoredReason: isInitialSystemLoad ? "google_prefetch" : undefined
+    client: detected.client
   });
 
   return getTrack(trackId);
 }
 
-function isSystemImageLoad(client: string) {
-  return client === "Gmail image proxy" || client === "Unknown client" || client === "Unknown";
-}
-
 export async function markSenderView(trackId: string) {
-  const { tracks, events } = await getCollections();
+  const { tracks } = await getCollections();
   const track = await tracks.findOne({ id: trackId });
   if (!track) return null;
-
-  const recentCutoff = new Date(Date.now() - 20 * 1000).toISOString();
-  const duplicateCutoff = new Date(Date.now() - 60 * 1000).toISOString();
-  const existingCorrection = await events.findOne({
-    trackId,
-    ignored: true,
-    ignoredReason: "sender_view",
-    openedAt: { $gte: duplicateCutoff }
-  });
-
-  if (existingCorrection) return getTrack(trackId);
-
-  await events.findOneAndUpdate(
-    { trackId, ignored: { $ne: true }, openedAt: { $gte: recentCutoff } },
-    { $set: { ignored: true, ignoredReason: "sender_view" } },
-    { sort: { openedAt: -1 } }
-  );
 
   return getTrack(trackId);
 }
 
 export async function getEvents(trackId?: string) {
   const { events } = await getCollections();
-  const query: Filter<OpenEventDocument> = {
-    ...(trackId ? { trackId } : {}),
-    ignoredReason: { $ne: "google_prefetch" }
-  };
+  const query = trackId ? { trackId } : {};
   const cursor = events.find(query, { projection: { _id: 0 } }).sort({ openedAt: -1 });
   if (!trackId) cursor.limit(100);
   return cursor.toArray();
@@ -240,7 +206,7 @@ export async function getEvents(trackId?: string) {
 
 export async function getStats(): Promise<Stats> {
   const tracks = await getTracks();
-  const events = (await getEvents()).filter((event) => !event.ignored);
+  const events = await getEvents();
   const opened = tracks.filter((track) => track.status === "opened").length;
   const deviceMap = new Map<string, number>();
   const dailyMap = new Map<string, number>();

@@ -41,9 +41,6 @@ export function EmailTable({ tracks }: { tracks: Track[] }) {
               <td className="px-4 py-3">
                 <div>{formatRelativeTime(track.lastOpenedAt)}</div>
                 <div className="text-xs text-muted-foreground">{formatDate(track.lastOpenedAt)}</div>
-                {track.selfOpenCount > 0 && (
-                  <div className="text-xs text-muted-foreground">{track.selfOpenCount} sender view ignored</div>
-                )}
               </td>
               <td className="px-4 py-3">{track.lastDevice ?? "Unknown"}</td>
             </tr>

@@ -27,7 +27,7 @@ export default async function SenderPage({ params }: { params: Promise<{ sender:
             <BrandMark />
             <div>
               <h1 className="text-xl font-semibold">{senderEmail}</h1>
-              <p className="text-sm text-muted-foreground">Tracked emails and recipient activity for this sender.</p>
+              <p className="text-sm text-muted-foreground">Tracked emails and raw pixel activity for this sender.</p>
             </div>
           </div>
           <Button asChild variant="secondary"><Link href="/"><ArrowLeft className="mr-2 h-4 w-4" />Dashboard</Link></Button>
@@ -38,7 +38,7 @@ export default async function SenderPage({ params }: { params: Promise<{ sender:
           <MetricCard title="Emails" value={tracks.length} icon={Mail} detail="Tracked from this sender" />
           <MetricCard title="Viewed" value={opened} icon={MailOpen} detail={`${tracks.length - opened} with no view`} />
           <MetricCard title="Open rate" value={`${openRate}%`} icon={Eye} detail="Unique emails viewed" />
-          <MetricCard title="Total opens" value={totalOpens} icon={Eye} detail="Recipient opens only" />
+          <MetricCard title="Total requests" value={totalOpens} icon={Eye} detail="Every tracking URL request" />
         </section>
         <EmailTable tracks={tracks} />
       </div>

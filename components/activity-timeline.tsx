@@ -1,4 +1,4 @@
-import { Eye, ShieldOff } from "lucide-react";
+import { Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
@@ -15,12 +15,12 @@ export function ActivityTimeline({ events }: { events: OpenEvent[] }) {
           {events.map((event) => (
             <div key={event.id} className="flex gap-3 rounded-lg border p-3">
               <div className="mt-0.5 flex h-8 w-8 items-center justify-center rounded-md bg-muted">
-                {event.ignored ? <ShieldOff className="h-4 w-4 text-muted-foreground" /> : <Eye className="h-4 w-4 text-primary" />}
+                <Eye className="h-4 w-4 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="font-medium">{event.ignored ? ignoredLabel(event.ignoredReason) : "Recipient opened"}</div>
-                  <Badge variant={event.ignored ? "secondary" : "default"}>{event.deviceType}</Badge>
+                  <div className="font-medium">Pixel requested</div>
+                  <Badge variant="default">{event.deviceType}</Badge>
                   <Badge variant="outline">{event.client}</Badge>
                 </div>
                 <div className="mt-1 text-sm text-muted-foreground">
@@ -37,9 +37,4 @@ export function ActivityTimeline({ events }: { events: OpenEvent[] }) {
       </CardContent>
     </Card>
   );
-}
-
-function ignoredLabel(reason: OpenEvent["ignoredReason"]) {
-  if (reason === "google_prefetch") return "Google/system image activity ignored";
-  return "Sender view ignored";
 }
