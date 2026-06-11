@@ -19,7 +19,7 @@ export function ActivityTimeline({ events }: { events: OpenEvent[] }) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="font-medium">{event.ignored ? "Sender view ignored" : "Recipient opened"}</div>
+                  <div className="font-medium">{event.ignored ? ignoredLabel(event.ignoredReason) : "Recipient opened"}</div>
                   <Badge variant={event.ignored ? "secondary" : "default"}>{event.deviceType}</Badge>
                   <Badge variant="outline">{event.client}</Badge>
                 </div>
@@ -37,4 +37,9 @@ export function ActivityTimeline({ events }: { events: OpenEvent[] }) {
       </CardContent>
     </Card>
   );
+}
+
+function ignoredLabel(reason: OpenEvent["ignoredReason"]) {
+  if (reason === "google_prefetch") return "Google image proxy prefetch ignored";
+  return "Sender view ignored";
 }

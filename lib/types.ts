@@ -26,7 +26,7 @@ export type OpenEvent = {
   deviceType: string;
   client: string;
   ignored?: boolean;
-  ignoredReason?: "sender_view";
+  ignoredReason?: "sender_view" | "google_prefetch";
 };
 
 export type Stats = {

@@ -165,15 +165,23 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
   if (!track) return null;
 
   const detected = detectDevice(userAgent);
+  const previousEvents = await events.countDocuments({ trackId });
+  const openedAt = new Date().toISOString();
+  const secondsSinceSent = Math.abs((Date.now() - new Date(track.sentAt || track.createdAt).getTime()) / 1000);
+  const isGooglePrefetch = previousEvents === 0
+    && detected.client === "Gmail image proxy"
+    && secondsSinceSent <= 30;
+
   await events.insertOne({
     id: await nextEventId(counters),
     trackId,
-    openedAt: new Date().toISOString(),
+    openedAt,
     ip,
     userAgent,
     deviceType: detected.deviceType,
     client: detected.client,
-    ignored: false
+    ignored: isGooglePrefetch,
+    ignoredReason: isGooglePrefetch ? "google_prefetch" : undefined
   });
 
   return getTrack(trackId);
