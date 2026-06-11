@@ -289,6 +289,36 @@ export async function getStats(): Promise<Stats> {
     receiverOpens: number;
     lastSentAt: string | null;
   }>();
+  const heatmapLabels = buildRecentDateLabels(14);
+  const heatmapLabelSet = new Set(heatmapLabels);
+  const heatmapRows = new Map<string, Map<string, {
+    sent: number;
+    viewed: number;
+    receiverOpens: number;
+    emails: {
+      id: string;
+      subject: string;
+      recipientEmail: string;
+      sentAt: string;
+      openCount: number;
+      lastOpenedAt: string | null;
+    }[];
+  }>>();
+  const todayLabel = new Date().toISOString().slice(0, 10);
+  const todayMap = new Map<string, {
+    email: string;
+    sent: number;
+    viewed: number;
+    receiverOpens: number;
+    emails: {
+      id: string;
+      subject: string;
+      recipientEmail: string;
+      sentAt: string;
+      openCount: number;
+      lastOpenedAt: string | null;
+    }[];
+  }>();
 
   for (const event of events) {
     deviceMap.set(event.deviceType, (deviceMap.get(event.deviceType) ?? 0) + 1);
@@ -362,6 +392,41 @@ export async function getStats(): Promise<Stats> {
     recipient.opened += wasOpened ? 1 : 0;
     recipient.lastSentAt = !recipient.lastSentAt || sentAt > recipient.lastSentAt ? sentAt : recipient.lastSentAt;
     recipientMap.set(track.recipientEmail, recipient);
+
+    const emailSummary = {
+      id: track.id,
+      subject: track.subject || "(No subject)",
+      recipientEmail: track.recipientEmail,
+      sentAt,
+      openCount: track.openCount,
+      lastOpenedAt: track.lastOpenedAt
+    };
+
+    if (heatmapLabelSet.has(date)) {
+      const row = heatmapRows.get(track.senderEmail) ?? new Map();
+      const cell = row.get(date) ?? { sent: 0, viewed: 0, receiverOpens: 0, emails: [] };
+      cell.sent += 1;
+      cell.receiverOpens += track.openCount;
+      cell.viewed += wasOpened ? 1 : 0;
+      cell.emails.push(emailSummary);
+      row.set(date, cell);
+      heatmapRows.set(track.senderEmail, row);
+    }
+
+    if (date === todayLabel) {
+      const today = todayMap.get(track.senderEmail) ?? {
+        email: track.senderEmail,
+        sent: 0,
+        viewed: 0,
+        receiverOpens: 0,
+        emails: []
+      };
+      today.sent += 1;
+      today.receiverOpens += track.openCount;
+      today.viewed += wasOpened ? 1 : 0;
+      today.emails.push(emailSummary);
+      todayMap.set(track.senderEmail, today);
+    }
   }
 
   return {
@@ -396,6 +461,37 @@ export async function getStats(): Promise<Stats> {
       .sort((a, b) => b.sent - a.sent || b.receiverOpens - a.receiverOpens || a.senderEmail.localeCompare(b.senderEmail)),
     recipientPerformance: Array.from(recipientMap.values())
       .sort((a, b) => b.sent - a.sent || b.receiverOpens - a.receiverOpens || a.recipientEmail.localeCompare(b.recipientEmail))
-      .slice(0, 12)
+      .slice(0, 12),
+    emailTimeActivity: {
+      timeLabels: heatmapLabels,
+      rows: Array.from(heatmapRows.entries())
+        .map(([email, cells]) => {
+          const renderedCells = heatmapLabels.map((time) => {
+            const cell = cells.get(time) ?? { sent: 0, viewed: 0, receiverOpens: 0, emails: [] };
+            return { time, ...cell };
+          });
+          return {
+            email,
+            totalSent: renderedCells.reduce((sum, cell) => sum + cell.sent, 0),
+            totalViewed: renderedCells.reduce((sum, cell) => sum + cell.viewed, 0),
+            totalReceiverOpens: renderedCells.reduce((sum, cell) => sum + cell.receiverOpens, 0),
+            cells: renderedCells
+          };
+        })
+        .sort((a, b) => b.totalSent - a.totalSent || b.totalReceiverOpens - a.totalReceiverOpens || a.email.localeCompare(b.email)),
+    },
+    todayEmailActivity: Array.from(todayMap.values())
+      .sort((a, b) => b.sent - a.sent || b.receiverOpens - a.receiverOpens || a.email.localeCompare(b.email))
   };
+}
+
+function buildRecentDateLabels(days: number) {
+  const labels: string[] = [];
+  const today = new Date();
+  for (let offset = days - 1; offset >= 0; offset -= 1) {
+    const date = new Date(today);
+    date.setUTCDate(today.getUTCDate() - offset);
+    labels.push(date.toISOString().slice(0, 10));
+  }
+  return labels;
 }

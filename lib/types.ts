@@ -71,4 +71,41 @@ export type Stats = {
     receiverOpens: number;
     lastSentAt: string | null;
   }[];
+  emailTimeActivity: {
+    timeLabels: string[];
+    rows: {
+      email: string;
+      totalSent: number;
+      totalViewed: number;
+      totalReceiverOpens: number;
+      cells: {
+        time: string;
+        sent: number;
+        viewed: number;
+        receiverOpens: number;
+        emails: {
+          id: string;
+          subject: string;
+          recipientEmail: string;
+          sentAt: string;
+          openCount: number;
+          lastOpenedAt: string | null;
+        }[];
+      }[];
+    }[];
+  };
+  todayEmailActivity: {
+    email: string;
+    sent: number;
+    viewed: number;
+    receiverOpens: number;
+    emails: {
+      id: string;
+      subject: string;
+      recipientEmail: string;
+      sentAt: string;
+      openCount: number;
+      lastOpenedAt: string | null;
+    }[];
+  }[];
 };
