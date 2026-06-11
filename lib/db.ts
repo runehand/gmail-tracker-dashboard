@@ -174,18 +174,14 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
   if (!track) return null;
 
   const detected = detectDevice(userAgent);
-  const previousCountedEvents = await events.countDocuments({ trackId, ignored: { $ne: true } });
+  const previousEvents = await events.countDocuments({ trackId });
   const openedAt = new Date().toISOString();
   const sentAtMs = new Date(track.sentAt || track.createdAt).getTime();
   const secondsSinceSent = Number.isNaN(sentAtMs) ? Number.POSITIVE_INFINITY : (Date.now() - sentAtMs) / 1000;
-  const isInitialSystemLoad = previousCountedEvents === 0
+  const isInitialSystemLoad = previousEvents === 0
     && secondsSinceSent >= -5
     && secondsSinceSent <= 120
     && isSystemImageLoad(detected.client);
-
-  if (isInitialSystemLoad) {
-    return getTrack(trackId);
-  }
 
   await events.insertOne({
     id: await nextEventId(counters),
@@ -194,7 +190,9 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
     ip,
     userAgent,
     deviceType: detected.deviceType,
-    client: detected.client
+    client: detected.client,
+    ignored: isInitialSystemLoad || undefined,
+    ignoredReason: isInitialSystemLoad ? "google_prefetch" : undefined
   });
 
   return getTrack(trackId);
