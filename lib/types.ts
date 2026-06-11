@@ -28,7 +28,7 @@ export type OpenEvent = {
   deviceType: string;
   client: string;
   ignored?: boolean;
-  ignoredReason?: "initial_system";
+  ignoredReason?: "initial_system" | "sender_view";
 };
 
 export type Stats = {

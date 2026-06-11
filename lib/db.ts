@@ -203,9 +203,16 @@ export async function recordOpen(trackId: string, userAgent: string | null, ip: 
 }
 
 export async function markSenderView(trackId: string) {
-  const { tracks } = await getCollections();
+  const { tracks, events } = await getCollections();
   const track = await tracks.findOne({ id: trackId });
   if (!track) return null;
+
+  const recentCutoff = new Date(Date.now() - 45 * 1000).toISOString();
+  await events.findOneAndUpdate(
+    { trackId, ignored: { $ne: true }, openedAt: { $gte: recentCutoff } },
+    { $set: { ignored: true, ignoredReason: "sender_view" } },
+    { sort: { openedAt: -1 } }
+  );
 
   return getTrack(trackId);
 }

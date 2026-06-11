@@ -19,7 +19,7 @@ export function ActivityTimeline({ events }: { events: OpenEvent[] }) {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="font-medium">{event.ignored ? "Initial system request" : "Pixel requested"}</div>
+                  <div className="font-medium">{eventLabel(event)}</div>
                   {event.requestIndex && <Badge variant="outline">#{event.requestIndex}</Badge>}
                   <Badge variant={event.ignored ? "secondary" : "default"}>{event.deviceType}</Badge>
                   <Badge variant="outline">{event.client}</Badge>
@@ -38,4 +38,10 @@ export function ActivityTimeline({ events }: { events: OpenEvent[] }) {
       </CardContent>
     </Card>
   );
+}
+
+function eventLabel(event: OpenEvent) {
+  if (event.ignoredReason === "initial_system") return "Initial system request";
+  if (event.ignoredReason === "sender_view") return "Sender activity";
+  return "Receiver activity";
 }

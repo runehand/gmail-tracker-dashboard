@@ -42,7 +42,7 @@ export default async function TrackPage({ params }: { params: Promise<{ id: stri
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <MetricCard title="Tracked opens" value={track.openCount} icon={Eye} detail={track.openCount ? `Last ${formatRelativeTime(track.lastOpenedAt)}` : "No receiver opens yet"} />
           <MetricCard title="Raw events" value={events.length} icon={MousePointerClick} detail="Every tracking URL request" />
-          <MetricCard title="System requests" value={summary.ignored.length} icon={ShieldOff} detail="First two requests ignored" />
+          <MetricCard title="Non-receiver" value={summary.ignored.length} icon={ShieldOff} detail="Initial system and sender activity" />
           <MetricCard title="Last device" value={track.lastDevice ?? "Unknown"} icon={Smartphone} detail={track.lastClient ?? "No client yet"} />
           <MetricCard title="Status" value={track.status === "opened" ? "Viewed" : "No view"} icon={MailOpen} detail={formatDate(track.lastOpenedAt)} />
         </section>
