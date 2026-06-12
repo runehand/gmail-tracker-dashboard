@@ -157,12 +157,12 @@ function TodayActivity({ data }: { data: Stats["todayEmailActivity"] }) {
                   return (
                     <div key={item.email} className="grid justify-items-center gap-2">
                       <div className="relative flex h-48 w-full items-end justify-center rounded-md bg-muted/30 px-2 pb-2 pt-4" title={`${item.email}: ${item.sent} sent, ${item.viewed} viewed`}>
-                        <div className="relative w-10 overflow-hidden rounded-t-md bg-primary/75" style={{ height: `${sentHeight}px` }}>
-                          <div className="absolute bottom-0 left-0 right-0 bg-amber-300" style={{ height: `${viewedHeight}px` }} />
+                        <div className="relative w-10 overflow-hidden rounded-t-md bg-gradient-to-t from-red-500 to-amber-300" style={{ height: `${sentHeight}px` }}>
+                          <div className="absolute bottom-0 left-0 right-0 bg-emerald-400" style={{ height: `${viewedHeight}px` }} />
                         </div>
                         <div className="absolute top-2 text-xs font-semibold">{item.sent}</div>
                         {item.viewed > 0 && (
-                          <div className="absolute bottom-2 text-[10px] font-semibold text-amber-950">{item.viewed}</div>
+                          <div className="absolute bottom-2 text-[10px] font-semibold text-emerald-950">{item.viewed}</div>
                         )}
                       </div>
                       <div className="h-10 w-full truncate text-center text-xs font-medium" title={item.email}>{item.email}</div>
@@ -172,8 +172,8 @@ function TodayActivity({ data }: { data: Stats["todayEmailActivity"] }) {
                 })}
               </div>
               <div className="mt-3 flex flex-wrap justify-end gap-4 text-xs text-muted-foreground">
-                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-primary/75" />Sent total height</span>
-                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-300" />Receiver viewed</span>
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-gradient-to-r from-red-500 to-amber-300" />Sent total height</span>
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" />Receiver viewed</span>
               </div>
             </div>
           </div>
