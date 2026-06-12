@@ -157,7 +157,7 @@ function TodayActivity({ data }: { data: Stats["todayEmailActivity"] }) {
                   return (
                     <div key={item.email} className="grid justify-items-center gap-2">
                       <div className="relative flex h-48 w-full items-end justify-center rounded-md bg-muted/30 px-2 pb-2 pt-4" title={`${item.email}: ${item.sent} sent, ${item.viewed} viewed`}>
-                        <div className="relative w-10 overflow-hidden rounded-t-md bg-gradient-to-t from-red-500 to-amber-300" style={{ height: `${sentHeight}px` }}>
+                        <div className="relative w-10 overflow-hidden rounded-t-md bg-gradient-to-t from-red-600 to-emerald-900" style={{ height: `${sentHeight}px` }}>
                           <div className="absolute bottom-0 left-0 right-0 bg-emerald-400" style={{ height: `${viewedHeight}px` }} />
                         </div>
                         <div className="absolute top-2 text-xs font-semibold">{item.sent}</div>
@@ -172,7 +172,7 @@ function TodayActivity({ data }: { data: Stats["todayEmailActivity"] }) {
                 })}
               </div>
               <div className="mt-3 flex flex-wrap justify-end gap-4 text-xs text-muted-foreground">
-                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-gradient-to-r from-red-500 to-amber-300" />Sent total height</span>
+                <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-gradient-to-r from-red-600 to-emerald-900" />Sent total height</span>
                 <span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-400" />Receiver viewed</span>
               </div>
             </div>
