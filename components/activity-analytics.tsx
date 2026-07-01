@@ -19,10 +19,10 @@ export function ActivityAnalytics({ stats }: { stats: Stats }) {
 }
 
 function EmailTimeHeatmap({ data }: { data: HeatmapData }) {
-  const max = Math.max(...data.rows.flatMap((row) => row.cells.map((cell) => Math.max(cell.sent, cell.receiverOpens))), 1);
+  const max = Math.max(...data.rows.flatMap((row) => row.cells.map((cell) => Math.max(cell.sent, cell.viewed))), 1);
   const firstActive = useMemo(() => {
     for (const row of data.rows) {
-      const cell = row.cells.find((item) => item.sent || item.receiverOpens);
+      const cell = row.cells.find((item) => item.sent || item.viewed);
       if (cell) return `${row.email}|${cell.time}`;
     }
     return data.rows[0]?.cells[0] ? `${data.rows[0].email}|${data.rows[0].cells[0].time}` : "";
@@ -68,10 +68,10 @@ function EmailTimeHeatmap({ data }: { data: HeatmapData }) {
                           key={key}
                           type="button"
                           onClick={() => setSelectedKey(key)}
-                          className={`h-10 rounded border text-center text-[11px] transition hover:ring-2 hover:ring-primary/40 ${cell.sent || cell.receiverOpens ? heatColor(cell, max) : "bg-muted/40 text-muted-foreground"} ${isSelected ? "ring-2 ring-primary" : ""}`}
+                          className={`h-10 rounded border text-center text-[11px] transition hover:ring-2 hover:ring-primary/40 ${cell.sent || cell.viewed ? heatColor(cell, max) : "bg-muted/40 text-muted-foreground"} ${isSelected ? "ring-2 ring-primary" : ""}`}
                           title={`${row.email} / ${cell.time}: ${cell.sent} sent, ${cell.viewed} viewed, ${cell.receiverOpens} opens`}
                         >
-                          {cell.sent || cell.receiverOpens ? `${cell.sent}/${cell.receiverOpens}` : ""}
+                          {cell.sent || cell.viewed ? `${cell.sent}/${cell.viewed}` : ""}
                         </button>
                       );
                     })}
@@ -186,7 +186,7 @@ function TodayActivity({ data }: { data: Stats["todayEmailActivity"] }) {
 }
 
 function heatColor(cell: HeatmapCell, max: number) {
-  const value = Math.max(cell.sent, cell.receiverOpens);
+  const value = Math.max(cell.sent, cell.viewed);
   const ratio = value / max;
   if (ratio >= 0.75) return "bg-emerald-700 text-white border-emerald-800";
   if (ratio >= 0.5) return "bg-emerald-500 text-white border-emerald-600";
